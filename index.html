@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Object Detection with Azure Computer Vision</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #upload-container, #result-container {
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload Image for Object Detection</h1>
+    
+    <!-- Image upload option -->
+    <div id="upload-container">
+        <input type="file" id="image-upload" accept="image/*">
+        <button onclick="sendImage()">Detect Objects</button>
+    </div>
+
+    <!-- Result from Azure Computer Vision -->
+    <div id="result-container">
+        <h2>Detected Objects:</h2>
+        <pre id="result-text">No result yet.</pre>
+    </div>
+
+    <script>
+        function sendImage() {
+            const fileInput = document.getElementById('image-upload');
+            if (fileInput.files.length === 0) {
+                alert("Please select an image first.");
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('image', file);
+
+            fetch('backend.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultText = document.getElementById('result-text');
+                if (data.result) {
+                    resultText.textContent = data.result;
+                } else {
+                    resultText.textContent = "Error: " + data.error;
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                document.getElementById('result-text').textContent = "An error occurred.";
+            });
+        }
+    </script>
+</body>
+</html>
