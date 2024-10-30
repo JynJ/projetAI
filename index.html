@@ -3,46 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Object Detection with Azure Computer Vision</title>
+    <title>Détection d'objets avec Azure Computer Vision</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            color: #fff;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            background-image: url('background.jpg'); /* Ajouter une option pour l'image de fond */
+            background-size: cover;
+            background-position: center;
         }
         #upload-container, #result-container {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
             margin: 20px;
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+            transition: transform 0.3s;
+        }
+        #upload-container:hover, #result-container:hover {
+            transform: translateY(-5px);
+        }
+        button {
+            padding: 15px 25px;
+            background-color: #9b59b6; /* Change button color to violet */
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        button:hover {
+            background-color: #8e44ad; /* Darker violet for hover */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        input[type="file"] {
+            padding: 12px;
+            border: none;
+            margin: 15px 0;
+            background-color: rgba(255, 255, 255, 0.3);
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        input[type="file"]:hover {
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+        h1, h2 {
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        #result-text {
+            white-space: pre-wrap;
+            background: #fff;
+            color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 100%;
+            overflow-x: auto;
+            font-size: 1rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
 <body>
-    <h1>Upload Image for Object Detection</h1>
+    <h1 style="color: #000;">Téléverser une image au format jpg</h1>
     
-    <!-- Image upload option -->
+    <!-- Image upload form -->
     <div id="upload-container">
-        <input type="file" id="image-upload" accept="image/*">
-        <button onclick="sendImage()">Detect Objects</button>
+        <form id="upload-form" enctype="multipart/form-data" onsubmit="sendImage(event)">
+            <input type="file" id="image-upload" onchange="validateFile()">
+            <br>
+            <span id="file-name" style="margin-left: 10px; color: #000;">Aucun fichier choisi</span>
+            <button type="submit">Détecter des objets</button>
+        </form>
     </div>
 
     <!-- Result from Azure Computer Vision -->
     <div id="result-container">
-        <h2>Detected Objects:</h2>
-        <pre id="result-text">No result yet.</pre>
+        <h2>Objets détectés :</h2>
+        <pre id="result-text">Aucun résultat pour le moment.</pre>
     </div>
 
     <script>
-        function sendImage() {
+        function validateFile() {
             const fileInput = document.getElementById('image-upload');
+            const fileNameDisplay = document.getElementById('file-name');
+            const file = fileInput.files[0];
+
+            if (file) {
+                const fileExtension = file.name.split('.').pop().toLowerCase();
+                if (fileExtension !== 'jpg' && fileExtension !== 'jpeg') {
+                    alert("Le format n'est pas bon, veuillez changer l'image pour un format jpeg");
+                    fileInput.value = ""; // Clear the input
+                    fileNameDisplay.textContent = 'Aucun fichier choisi';
+                } else {
+                    fileNameDisplay.textContent = file.name;
+                }
+            }
+        }
+
+        function sendImage(event) {
+            // Prevent default form submission
+            event.preventDefault();
+
+            // Get the file input element
+            const fileInput = document.getElementById('image-upload');
+            const fileNameDisplay = document.getElementById('file-name');
+
+            // Check if any file is selected
             if (fileInput.files.length === 0) {
-                alert("Please select an image first.");
+                alert("Veuillez d'abord sélectionner une image.");
                 return;
             }
+            fileNameDisplay.textContent = fileInput.files.length > 0 ? fileInput.files[0].name : 'Aucun fichier choisi';
             
+            // Create FormData with the uploaded file
             const file = fileInput.files[0];
             const formData = new FormData();
             formData.append('image', file);
 
+            // Fetch API to send image to the backend
             fetch('backend.php', {
                 method: 'POST',
                 body: formData
@@ -53,12 +149,12 @@
                 if (data.result) {
                     resultText.textContent = data.result;
                 } else {
-                    resultText.textContent = "Error: " + data.error;
+                    resultText.textContent = "Erreur : " + data.error;
                 }
             })
             .catch(error => {
                 console.error("Error:", error);
-                document.getElementById('result-text').textContent = "An error occurred.";
+                document.getElementById('result-text').textContent = "Une erreur est survenue : " + error.message;
             });
         }
     </script>

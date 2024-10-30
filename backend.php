@@ -1,4 +1,4 @@
-<?php
+<?php 
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -7,12 +7,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Read image binary data
-    $imageData = file_get_contents($_FILES['image']['tmp_name']);
+    // Get the file extension
+    $fileInfo = pathinfo($_FILES['image']['name']);
+    $extension = strtolower($fileInfo['extension']);
+
+    // Convert PNG to JPEG if necessary
+    if ($extension === 'png') {
+        $image = imagecreatefrompng($_FILES['image']['tmp_name']);
+        if ($image === false) {
+            echo json_encode(["error" => "Invalid PNG file"]);
+            exit;
+        }
+        $jpegTempPath = sys_get_temp_dir() . '/' . uniqid() . '.jpg';
+        imagejpeg($image, $jpegTempPath, 100);
+        imagedestroy($image);
+        $imageData = file_get_contents($jpegTempPath);
+        unlink($jpegTempPath);
+    } else {
+        // Read image binary data for JPEG
+        $imageData = file_get_contents($_FILES['image']['tmp_name']);
+    }
 
     // Replace with your Azure Computer Vision Subscription Key and Endpoint
-    $subscriptionKey = 'FBlYmm2RHqnOiBufE2huXpAWPZPlDAshl0S0roySDYhGcAKcvTNAJQQJ99AJAC5T7U2XJ3w3AAAEACOGQeZw';
-    $endpoint = 'https://projetjyia.cognitiveservices.azure.com/vision/v3.2/detect';
+    $subscriptionKey = '9vPWzZUvgxn4mnqUYNANcKfVZrZjhG9MaeJ8OS6XXhKk2ATgDhUxJQQJ99AJAC5T7U2XJ3w3AAAEACOGjrkA';
+    $endpoint = 'https://projetiajy.cognitiveservices.azure.com/vision/v3.2/detect';
 
     // Initialize cURL
     $ch = curl_init();
@@ -37,12 +55,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Check if response is not OK
     if ($httpCode !== 200) {
-        echo json_encode(["error" => "HTTP Error Code: $httpCode", "response" => $response]);
+        echo json_encode([
+            "error" => "HTTP Error Code: $httpCode",
+            "response" => json_decode($response, true) ?: $response
+        ]);
         exit;
     }
 
     // Parse and format response
     $data = json_decode($response, true);
+    if ($data === null) {
+        echo json_encode(["error" => "Invalid JSON response from Azure"]);
+        exit;
+    }
+
     if (isset($data['objects'])) {
         $resultDescription = "Detected objects:\n";
         foreach ($data['objects'] as $object) {
